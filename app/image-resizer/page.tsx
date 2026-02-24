@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dropzone } from '@/components/ui/dropzone';
 import { formatBytes } from '@/lib/image-utils';
-import { Download, ArrowRight, Settings2, Image as ImageIcon } from 'lucide-react';
+import { Download, ArrowRight, Settings2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function ImageResizer() {
   const [file, setFile] = useState<File | null>(null);
@@ -18,6 +18,8 @@ export default function ImageResizer() {
   
   const [resizedBlob, setResizedBlob] = useState<Blob | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (file) {
@@ -36,6 +38,18 @@ export default function ImageResizer() {
     }
   }, [file]);
 
+  const handleDrop = (acceptedFiles: File[]) => {
+    const imageFile = acceptedFiles[0];
+    if (!imageFile || !imageFile.type.startsWith('image/')) {
+      setError('Please upload a valid image file.');
+      return;
+    }
+    setFile(imageFile);
+    setResizedBlob(null);
+    setError(null);
+    setSuccess(false);
+  };
+
   const handleWidthChange = (val: number) => {
     setWidth(val);
     if (maintainRatio && originalRatio) {
@@ -53,6 +67,8 @@ export default function ImageResizer() {
   const processImage = async () => {
     if (!file || !previewUrl) return;
     setIsProcessing(true);
+    setError(null);
+    setSuccess(false);
 
     try {
       const img = new Image();
@@ -71,6 +87,10 @@ export default function ImageResizer() {
         targetHeight = Math.round(img.height * (percentage / 100));
       }
 
+      if (targetWidth <= 0 || targetHeight <= 0) {
+        throw new Error('Invalid dimensions. Width and height must be greater than 0.');
+      }
+
       canvas.width = targetWidth;
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
@@ -84,10 +104,13 @@ export default function ImageResizer() {
       
       if (blob) {
         setResizedBlob(blob);
+        setSuccess(true);
+      } else {
+        throw new Error('Failed to create image blob');
       }
     } catch (err) {
       console.error(err);
-      alert('Error resizing image');
+      setError(err instanceof Error ? err.message : 'Error resizing image. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -114,13 +137,13 @@ export default function ImageResizer() {
 
       {!file ? (
         <Dropzone
-          onDrop={(files) => setFile(files[0])}
+          onDrop={handleDrop}
           accept={{ 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.svg'] }}
           maxFiles={1}
+          label="Drag & drop an image here to resize"
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column: Settings */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
               <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -128,7 +151,7 @@ export default function ImageResizer() {
                 Resize Settings
               </h2>
               <button 
-                onClick={() => { setFile(null); setResizedBlob(null); }}
+                onClick={() => { setFile(null); setResizedBlob(null); setError(null); setSuccess(false); }}
                 className="text-sm text-slate-500 hover:text-indigo-600"
               >
                 Change Image
@@ -199,6 +222,27 @@ export default function ImageResizer() {
                 </div>
               )}
 
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3 text-red-700">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+
+              {isProcessing && (
+                <div className="flex items-center justify-center gap-2 text-indigo-600 font-medium">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Resizing...</span>
+                </div>
+              )}
+
+              {success && resizedBlob && (
+                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3 text-emerald-700">
+                  <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                  <p className="text-sm font-semibold">Resize Successful!</p>
+                </div>
+              )}
+
               <button
                 onClick={processImage}
                 disabled={isProcessing}
@@ -210,7 +254,6 @@ export default function ImageResizer() {
             </div>
           </div>
 
-          {/* Right Column: Preview */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
               <ImageIcon className="w-5 h-5 text-indigo-500" />
@@ -219,6 +262,7 @@ export default function ImageResizer() {
             
             <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-slate-200 p-4 mb-6 overflow-hidden">
               {previewUrl && (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
                   src={resizedBlob ? URL.createObjectURL(resizedBlob) : previewUrl} 
                   alt="Preview" 

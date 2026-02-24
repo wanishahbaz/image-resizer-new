@@ -32,11 +32,11 @@ export default function PrivacyPolicyPage() {
             <li>Pages visited and time spent on the site</li>
             <li>Referring website addresses</li>
           </ul>
-          <p>This information is used solely for analytical purposes to improve our website's performance and user experience.</p>
+          <p>This information is used solely for analytical purposes to improve our website&apos;s performance and user experience.</p>
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">3. Cookies</h2>
           <p>
-            We may use "cookies" to enhance your experience. You can choose to set your web browser to refuse cookies or to alert you when cookies are being sent. If you do so, note that some parts of the site may not function properly.
+            We may use &quot;cookies&quot; to enhance your experience. You can choose to set your web browser to refuse cookies or to alert you when cookies are being sent. If you do so, note that some parts of the site may not function properly.
           </p>
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">4. Third-Party Services</h2>

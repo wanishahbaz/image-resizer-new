@@ -3,17 +3,19 @@
 import { useState, useEffect } from 'react';
 import { Dropzone } from '@/components/ui/dropzone';
 import { formatBytes } from '@/lib/image-utils';
-import { Download, ArrowRight, Settings2, Image as ImageIcon } from 'lucide-react';
+import { Download, ArrowRight, Settings2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+
+type TargetFormat = 'image/jpeg' | 'image/png' | 'image/webp';
 
 export default function ImageConverter() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  
-  const [targetFormat, setTargetFormat] = useState<'image/jpeg' | 'image/png' | 'image/webp'>('image/jpeg');
+  const [targetFormat, setTargetFormat] = useState<TargetFormat>('image/jpeg');
   const [quality, setQuality] = useState<number>(90);
-  
   const [convertedBlob, setConvertedBlob] = useState<Blob | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (file) {
@@ -23,9 +25,23 @@ export default function ImageConverter() {
     }
   }, [file]);
 
+  const handleDrop = (acceptedFiles: File[]) => {
+    const imageFile = acceptedFiles[0];
+    if (!imageFile || !imageFile.type.startsWith('image/')) {
+      setError('Please upload a valid image file.');
+      return;
+    }
+    setFile(imageFile);
+    setConvertedBlob(null);
+    setError(null);
+    setSuccess(false);
+  };
+
   const processImage = async () => {
     if (!file || !previewUrl) return;
     setIsProcessing(true);
+    setError(null);
+    setSuccess(false);
 
     try {
       const img = new Image();
@@ -41,7 +57,6 @@ export default function ImageConverter() {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get canvas context');
       
-      // Fill with white background for transparency to JPEG conversion
       if (targetFormat === 'image/jpeg') {
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -55,10 +70,13 @@ export default function ImageConverter() {
       
       if (blob) {
         setConvertedBlob(blob);
+        setSuccess(true);
+      } else {
+        throw new Error('Failed to create image blob');
       }
     } catch (err) {
       console.error(err);
-      alert('Error converting image');
+      setError('Error converting image. The file might be corrupted or unsupported.');
     } finally {
       setIsProcessing(false);
     }
@@ -86,9 +104,10 @@ export default function ImageConverter() {
 
       {!file ? (
         <Dropzone
-          onDrop={(files) => setFile(files[0])}
+          onDrop={handleDrop}
           accept={{ 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.svg'] }}
           maxFiles={1}
+          label="Drag & drop an image here to convert"
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -99,7 +118,7 @@ export default function ImageConverter() {
                 Conversion Settings
               </h2>
               <button 
-                onClick={() => { setFile(null); setConvertedBlob(null); }}
+                onClick={() => { setFile(null); setConvertedBlob(null); setError(null); setSuccess(false); }}
                 className="text-sm text-slate-500 hover:text-indigo-600"
               >
                 Change Image
@@ -110,21 +129,17 @@ export default function ImageConverter() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Target Format</label>
                 <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'JPG', value: 'image/jpeg' },
-                    { label: 'PNG', value: 'image/png' },
-                    { label: 'WEBP', value: 'image/webp' },
-                  ].map((fmt) => (
+                  {(['image/jpeg', 'image/png', 'image/webp'] as TargetFormat[]).map((fmt) => (
                     <button
-                      key={fmt.value}
-                      onClick={() => setTargetFormat(fmt.value as any)}
+                      key={fmt}
+                      onClick={() => setTargetFormat(fmt)}
                       className={`py-2 px-4 rounded-lg text-sm font-medium transition-colors border ${
-                        targetFormat === fmt.value
+                        targetFormat === fmt
                           ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                           : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                       }`}
                     >
-                      {fmt.label}
+                      {fmt.split('/')[1].toUpperCase()}
                     </button>
                   ))}
                 </div>
@@ -147,12 +162,33 @@ export default function ImageConverter() {
                 </div>
               )}
 
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3 text-red-700">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+
+              {isProcessing && (
+                <div className="flex items-center justify-center gap-2 text-indigo-600 font-medium">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Converting...</span>
+                </div>
+              )}
+
+              {success && convertedBlob && (
+                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3 text-emerald-700">
+                  <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                  <p className="text-sm font-semibold">Conversion Successful!</p>
+                </div>
+              )}
+
               <button
                 onClick={processImage}
                 disabled={isProcessing}
                 className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isProcessing ? 'Converting...' : 'Convert Image'}
+                {isProcessing ? 'Processing...' : 'Convert Image'}
                 {!isProcessing && <ArrowRight className="w-4 h-4" />}
               </button>
             </div>
@@ -166,6 +202,7 @@ export default function ImageConverter() {
             
             <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-slate-200 p-4 mb-6 overflow-hidden">
               {previewUrl && (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
                   src={convertedBlob ? URL.createObjectURL(convertedBlob) : previewUrl} 
                   alt="Preview" 

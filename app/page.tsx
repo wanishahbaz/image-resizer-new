@@ -1,5 +1,20 @@
 import Link from 'next/link';
-import { Maximize, RefreshCw, Minimize2, FileImage, FileDown, Star, Zap, ShieldCheck } from 'lucide-react';
+import { 
+  Maximize, 
+  RefreshCw, 
+  Minimize2, 
+  FileImage, 
+  FileDown, 
+  Star, 
+  Zap, 
+  ShieldCheck,
+  Combine,
+  Scissors,
+  FileText,
+  FileType,
+  Unlock,
+  Lock
+} from 'lucide-react';
 
 const tools = [
   {
@@ -41,6 +56,54 @@ const tools = [
     href: '/pdf-compressor',
     color: 'text-rose-500',
     bg: 'bg-rose-50',
+  },
+  {
+    title: 'Merge PDF',
+    description: 'Combine multiple PDF files into one document in seconds.',
+    icon: Combine,
+    href: '/merge-pdf',
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-50',
+  },
+  {
+    title: 'Split PDF',
+    description: 'Extract pages or split your PDF into multiple documents.',
+    icon: Scissors,
+    href: '/split-pdf',
+    color: 'text-cyan-500',
+    bg: 'bg-cyan-50',
+  },
+  {
+    title: 'PDF to Word',
+    description: 'Convert PDF documents into editable Word files instantly.',
+    icon: FileText,
+    href: '/pdf-to-word',
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+  },
+  {
+    title: 'Word to PDF',
+    description: 'Convert Word documents (.docx) into high-quality PDF files.',
+    icon: FileType,
+    href: '/word-to-pdf',
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+  },
+  {
+    title: 'Unlock PDF',
+    description: 'Remove passwords and restrictions from your PDF files.',
+    icon: Unlock,
+    href: '/unlock-pdf',
+    color: 'text-orange-500',
+    bg: 'bg-orange-50',
+  },
+  {
+    title: 'Protect PDF',
+    description: 'Encrypt your PDF with a password to prevent unauthorized access.',
+    icon: Lock,
+    href: '/protect-pdf',
+    color: 'text-slate-700',
+    bg: 'bg-slate-100',
   },
 ];
 

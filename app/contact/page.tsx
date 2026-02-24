@@ -8,7 +8,7 @@ export default function ContactPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-12">
         <h1 className="text-4xl font-bold text-slate-900 mb-6 text-center">Contact Us</h1>
         <p className="text-lg text-slate-600 mb-12 text-center max-w-2xl mx-auto">
-          Have a question, feedback, or need support? We're here to help. Reach out to us using the information below.
+          Have a question, feedback, or need support? We&apos;re here to help. Reach out to us using the information below.
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">

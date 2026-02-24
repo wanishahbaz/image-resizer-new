@@ -18,12 +18,12 @@ export default function AboutPage() {
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">Our Philosophy</h2>
           <p>
-            We believe that basic file manipulation should be accessible to everyone without paywalls, subscriptions, or compromising privacy. That's why we built BestOnlineTools with a privacy-first approach.
+            We believe that basic file manipulation should be accessible to everyone without paywalls, subscriptions, or compromising privacy. That&apos;s why we built BestOnlineTools with a privacy-first approach.
           </p>
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">Privacy First</h2>
           <p>
-            Unlike many other online tools, <strong>we never upload your files to our servers</strong>. All processing—whether it's resizing an image, converting formats, or compressing a PDF—happens entirely within your web browser. This means your sensitive documents and personal photos remain strictly on your device.
+            Unlike many other online tools, <strong>we never upload your files to our servers</strong>. All processing&mdash;whether it&apos;s resizing an image, converting formats, or compressing a PDF&mdash;happens entirely within your web browser. This means your sensitive documents and personal photos remain strictly on your device.
           </p>
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">Why Choose Us?</h2>
@@ -36,7 +36,7 @@ export default function AboutPage() {
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">Contact Us</h2>
           <p>
-            Have a suggestion, found a bug, or just want to say hi? We'd love to hear from you. Visit our <a href="/contact" className="text-indigo-600 hover:underline">Contact page</a> to get in touch.
+            Have a suggestion, found a bug, or just want to say hi? We&apos;d love to hear from you. Visit our <a href="/contact" className="text-indigo-600 hover:underline">Contact page</a> to get in touch.
           </p>
         </div>
       </div>

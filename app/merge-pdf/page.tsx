@@ -3,106 +3,83 @@
 import { useState } from 'react';
 import { Dropzone } from '@/components/ui/dropzone';
 import { formatBytes } from '@/lib/image-utils';
-import { Download, ArrowRight, Settings2, ImageIcon, Loader2, AlertCircle, CheckCircle2, FileText, Trash2 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
+import { createSafePdfBlob, isPdf } from '@/lib/pdf-utils';
+import { Download, ArrowRight, Settings2, FileText, Trash2, GripVertical, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { PDFDocument } from 'pdf-lib';
 
-export default function ImageToPdf() {
+export default function MergePdf() {
   const [files, setFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [mergedBlob, setMergedBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleDrop = (acceptedFiles: File[]) => {
-    const imageFiles = acceptedFiles.filter(f => f.type.startsWith('image/'));
-    if (imageFiles.length !== acceptedFiles.length) {
-      setError('Some files were skipped because they are not valid images.');
+    const pdfFiles = acceptedFiles.filter(isPdf);
+    if (pdfFiles.length !== acceptedFiles.length) {
+      setError('Some files were skipped because they are not valid PDFs.');
     } else {
       setError(null);
     }
-    setFiles((prev) => [...prev, ...imageFiles]);
-    setPdfBlob(null);
+    setFiles((prev) => [...prev, ...pdfFiles]);
+    setMergedBlob(null);
     setSuccess(false);
   };
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
-    setPdfBlob(null);
+    setMergedBlob(null);
     setSuccess(false);
   };
 
-  const processConversion = async () => {
-    if (files.length === 0) return;
+  const moveFile = (fromIndex: number, toIndex: number) => {
+    const updatedFiles = [...files];
+    const [movedFile] = updatedFiles.splice(fromIndex, 1);
+    updatedFiles.splice(toIndex, 0, movedFile);
+    setFiles(updatedFiles);
+    setMergedBlob(null);
+    setSuccess(false);
+  };
+
+  const processMerge = async () => {
+    if (files.length < 2) {
+      setError('Please upload at least 2 PDF files to merge.');
+      return;
+    }
+    
     setIsProcessing(true);
-    setPdfBlob(null);
     setError(null);
+    setMergedBlob(null);
     setSuccess(false);
 
     try {
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: 'a4',
-      });
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Use FileReader to get base64
-        const base64data = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-
-        const img = new Image();
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = base64data;
-        });
-        
-        if (i > 0) pdf.addPage();
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        
-        const imgRatio = img.width / img.height;
-        const pdfRatio = pdfWidth / pdfHeight;
-
-        let renderWidth = pdfWidth;
-        let renderHeight = pdfHeight;
-
-        if (imgRatio > pdfRatio) {
-          renderHeight = pdfWidth / imgRatio;
-        } else {
-          renderWidth = pdfHeight * imgRatio;
-        }
-
-        const x = (pdfWidth - renderWidth) / 2;
-        const y = (pdfHeight - renderHeight) / 2;
-
-        pdf.addImage(base64data, 'JPEG', x, y, renderWidth, renderHeight);
+      const mergedPdf = await PDFDocument.create();
+      
+      for (const file of files) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer);
+        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        copiedPages.forEach((page) => mergedPdf.addPage(page));
       }
 
-      const blob = pdf.output('blob');
-      setPdfBlob(blob);
+      const pdfBytes = await mergedPdf.save();
+      const blob = createSafePdfBlob(pdfBytes);
+      setMergedBlob(blob);
       setSuccess(true);
-    } catch (err: unknown) {
+    } catch (err) {
       console.error(err);
-      setError('Error converting images to PDF. Please ensure all files are valid images.');
+      setError('Error merging PDFs. One or more files might be corrupted or password-protected.');
     } finally {
       setIsProcessing(false);
     }
   };
 
   const downloadPdf = () => {
-    if (!pdfBlob) return;
-    const url = URL.createObjectURL(pdfBlob);
+    if (!mergedBlob) return;
+    const url = URL.createObjectURL(mergedBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `images-${Date.now()}.pdf`;
+    a.download = `merged-${Date.now()}.pdf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -114,16 +91,16 @@ export default function ImageToPdf() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Image to PDF</h1>
-        <p className="text-slate-500">Convert one or multiple images into a professional PDF document.</p>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">Merge PDF</h1>
+        <p className="text-slate-500">Combine multiple PDF files into a single document in seconds.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <Dropzone
             onDrop={handleDrop}
-            accept={{ 'image/*': [] }}
-            label="Drag & drop images here to convert to PDF"
+            accept={{ 'application/pdf': ['.pdf'] }}
+            label="Drag & drop PDF files here to merge"
           />
 
           {error && (
@@ -136,15 +113,31 @@ export default function ImageToPdf() {
           {files.length > 0 && (
             <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                <h3 className="font-semibold text-slate-800">Images to Convert ({files.length})</h3>
+                <h3 className="font-semibold text-slate-800">Files to Merge ({files.length})</h3>
                 <span className="text-sm text-slate-500">Total: {formatBytes(totalSize)}</span>
               </div>
               <ul className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
                 {files.map((file, idx) => (
                   <li key={`${file.name}-${idx}`} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-4 overflow-hidden">
+                      <div className="flex flex-col gap-1">
+                        <button 
+                          onClick={() => idx > 0 && moveFile(idx, idx - 1)}
+                          className="text-slate-400 hover:text-indigo-600 disabled:opacity-30"
+                          disabled={idx === 0 || isProcessing}
+                        >
+                          <GripVertical className="w-4 h-4 rotate-90" />
+                        </button>
+                        <button 
+                          onClick={() => idx < files.length - 1 && moveFile(idx, idx + 1)}
+                          className="text-slate-400 hover:text-indigo-600 disabled:opacity-30"
+                          disabled={idx === files.length - 1 || isProcessing}
+                        >
+                          <GripVertical className="w-4 h-4 rotate-90" />
+                        </button>
+                      </div>
                       <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <ImageIcon className="w-5 h-5" />
+                        <FileText className="w-5 h-5" />
                       </div>
                       <div className="truncate">
                         <p className="text-sm font-medium text-slate-700 truncate">{file.name}</p>
@@ -169,13 +162,13 @@ export default function ImageToPdf() {
           <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 sticky top-24">
             <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
               <Settings2 className="w-5 h-5 text-indigo-500" />
-              <h2 className="text-lg font-semibold">PDF Options</h2>
+              <h2 className="text-lg font-semibold">Merge Options</h2>
             </div>
 
             <div className="space-y-6">
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-sm text-slate-600 mb-2">Images will be placed on A4 pages in the order they were uploaded.</p>
-                <p className="text-xs text-slate-400 italic">Each image will be centered and scaled to fit.</p>
+                <p className="text-sm text-slate-600 mb-2">Files will be merged in the order shown in the list.</p>
+                <p className="text-xs text-slate-400 italic">Use the arrows to reorder files.</p>
               </div>
 
               {isProcessing && (
@@ -183,7 +176,7 @@ export default function ImageToPdf() {
                   <div className="flex justify-between text-sm text-slate-600">
                     <span className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Creating PDF...
+                      Merging files...
                     </span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
@@ -192,24 +185,24 @@ export default function ImageToPdf() {
                 </div>
               )}
 
-              {success && pdfBlob && (
+              {success && mergedBlob && (
                 <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3 text-emerald-700">
                   <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold">PDF Created!</p>
-                    <p className="text-xs">Final size: {formatBytes(pdfBlob.size)}</p>
+                    <p className="text-sm font-semibold">Merge Successful!</p>
+                    <p className="text-xs">Final size: {formatBytes(mergedBlob.size)}</p>
                   </div>
                 </div>
               )}
 
-              {!pdfBlob ? (
+              {!mergedBlob ? (
                 <button
-                  onClick={processConversion}
-                  disabled={isProcessing || files.length === 0}
+                  onClick={processMerge}
+                  disabled={isProcessing || files.length < 2}
                   className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isProcessing ? 'Processing...' : 'Create PDF'}
-                  {!isProcessing && <FileText className="w-4 h-4" />}
+                  {isProcessing ? 'Processing...' : 'Merge PDFs'}
+                  {!isProcessing && <ArrowRight className="w-4 h-4" />}
                 </button>
               ) : (
                 <div className="space-y-3">
@@ -218,10 +211,10 @@ export default function ImageToPdf() {
                     className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
                   >
                     <Download className="w-5 h-5" />
-                    Download PDF
+                    Download Merged PDF
                   </button>
                   <button
-                    onClick={() => { setPdfBlob(null); setFiles([]); setSuccess(false); }}
+                    onClick={() => { setMergedBlob(null); setFiles([]); setSuccess(false); }}
                     className="w-full py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-xl transition-colors"
                   >
                     Start Over

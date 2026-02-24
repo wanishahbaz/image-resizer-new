@@ -19,7 +19,7 @@ export default function TermsPage() {
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">1. Use of Service</h2>
           <p>
-            Our tools are provided for personal and commercial use. You agree to use the service only for lawful purposes and in a way that does not infringe the rights of, restrict, or inhibit anyone else's use and enjoyment of the website.
+            Our tools are provided for personal and commercial use. You agree to use the service only for lawful purposes and in a way that does not infringe the rights of, restrict, or inhibit anyone else&apos;s use and enjoyment of the website.
           </p>
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">2. Intellectual Property</h2>
@@ -34,7 +34,7 @@ export default function TermsPage() {
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">4. Disclaimer of Warranties</h2>
           <p>
-            The service is provided on an "AS IS" and "AS AVAILABLE" basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties, including without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
+            The service is provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties, including without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
           </p>
           
           <h2 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">5. Limitation of Liability</h2>
